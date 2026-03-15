@@ -57,19 +57,26 @@ export const MessageActions = {
 				})
 				.exec();
 
-			// Group by sessionId and get the latest title for each
+			// Group by sessionId
 			const sessionMap = new Map<
 				string,
 				{ id: string; title: string; lastMessageAt: string }
 			>();
 
 			docs.forEach((doc: any) => {
-				if (!sessionMap.has(doc.sessionId)) {
+				const existing = sessionMap.get(doc.sessionId);
+				if (!existing) {
 					sessionMap.set(doc.sessionId, {
 						id: doc.sessionId,
 						title: doc.title || "New Chat",
 						lastMessageAt: doc.createdAt,
 					});
+				} else {
+					// If we already have the session (which means we have its LATEST message due to sort)
+					// but the title is "New Chat", try to use this older message's title if it's better
+					if (existing.title === "New Chat" && doc.title) {
+						existing.title = doc.title;
+					}
 				}
 			});
 
@@ -159,6 +166,19 @@ export const MessageActions = {
 			})
 			.exec();
 
+		for (const doc of docs) {
+			await doc.remove();
+		}
+	},
+
+	/**
+	 * Delete all messages and sessions
+	 */
+	async clearAllMessages() {
+		const collection = await getCollection();
+		if (!collection) throw new Error("Collection not initialized");
+
+		const docs = await collection.find().exec();
 		for (const doc of docs) {
 			await doc.remove();
 		}

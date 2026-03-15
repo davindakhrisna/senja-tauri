@@ -1,0 +1,3 @@
+-[] Refactor new chat suggestions
+-[] New theme
+-[] Personality

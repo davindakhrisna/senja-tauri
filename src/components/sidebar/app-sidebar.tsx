@@ -1,11 +1,19 @@
 import {
-	IconCamera,
-	IconFileAi,
-	IconFileDescription,
 	IconInnerShadowTop,
-	IconSettings,
 	IconCirclePlusFilled,
+	IconTrash,
 } from "@tabler/icons-react";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "#/components/ui/alert-dialog";
 import {
 	Sidebar,
 	SidebarContent,
@@ -13,17 +21,12 @@ import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
+	SidebarFooter,
 } from "#/components/ui/sidebar";
 import { NavDocuments } from "./nav-documents";
 import { NavMain } from "./nav-main";
-import { NavSecondary } from "./nav-secondary";
 
 const data = {
-	user: {
-		name: "shadcn",
-		email: "m@example.com",
-		avatar: "/avatars/shadcn.jpg",
-	},
 	navMain: [
 		{
 			title: "New Chat",
@@ -31,106 +34,27 @@ const data = {
 			icon: IconCirclePlusFilled,
 		},
 	],
-	navClouds: [
-		{
-			title: "Capture",
-			icon: IconCamera,
-			isActive: true,
-			url: "#",
-			items: [
-				{
-					title: "Active Proposals",
-					url: "#",
-				},
-				{
-					title: "Archived",
-					url: "#",
-				},
-			],
-		},
-		{
-			title: "Proposal",
-			icon: IconFileDescription,
-			url: "#",
-			items: [
-				{
-					title: "Active Proposals",
-					url: "#",
-				},
-				{
-					title: "Archived",
-					url: "#",
-				},
-			],
-		},
-		{
-			title: "Prompts",
-			icon: IconFileAi,
-			url: "#",
-			items: [
-				{
-					title: "Active Proposals",
-					url: "#",
-				},
-				{
-					title: "Archived",
-					url: "#",
-				},
-			],
-		},
-	],
-	navSecondary: [
-		{
-			title: "Settings",
-			url: "#",
-			icon: IconSettings,
-		},
-	],
-	documents: [
-		{
-			name: "Product Launch Strategy",
-			url: "#",
-		},
-		{
-			name: "Q4 Marketing Plan",
-			url: "#",
-		},
-		{
-			name: "Budget Review 2024",
-			url: "#",
-		},
-		{
-			name: "Team Meeting Notes",
-			url: "#",
-		},
-		{
-			name: "Customer Feedback Analysis",
-			url: "#",
-		},
-		{
-			name: "Website Redesign Ideas",
-			url: "#",
-		},
-		{
-			name: "Sales Pipeline Review",
-			url: "#",
-		},
-		{
-			name: "Content Calendar Planning",
-			url: "#",
-		},
-		{
-			name: "Competitor Analysis",
-			url: "#",
-		},
-		{
-			name: "Email Campaign Draft",
-			url: "#",
-		},
-	],
 };
 
+import { useSessionsStore } from "@/hooks/use-sessions-store";
+import { useEffect } from "react";
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+	const { sessions, fetchSessions, isLoaded, clearAllSessions } = useSessionsStore();
+
+	useEffect(() => {
+		if (!isLoaded) {
+			fetchSessions();
+		}
+	}, [isLoaded, fetchSessions]);
+
+	const chatItems = sessions.map((s) => ({
+		id: s.id,
+		name: s.title,
+		url: `/chat/${s.id}`,
+		isLoading: s.isLoading,
+	}));
+
 	return (
 		<Sidebar collapsible="offcanvas" {...props}>
 			<SidebarHeader>
@@ -140,7 +64,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 							asChild
 							className="data-[slot=sidebar-menu-button]:p-1.5!"
 						>
-							<a href="#" className="text-inherit!">
+							<a href="/" className="text-inherit!">
 								<IconInnerShadowTop className="size-5!" />
 								<span className="text-base font-semibold">Senja.</span>
 							</a>
@@ -150,9 +74,40 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 			</SidebarHeader>
 			<SidebarContent>
 				<NavMain items={data.navMain} />
-				<NavDocuments items={data.documents} />
-				<NavSecondary items={data.navSecondary} className="mt-auto" />
+				<NavDocuments items={chatItems} />
 			</SidebarContent>
+			<SidebarFooter>
+				<SidebarMenu>
+					<SidebarMenuItem>
+						<AlertDialog>
+							<AlertDialogTrigger asChild>
+								<SidebarMenuButton className="text-destructive hover:text-destructive hover:bg-destructive/10">
+									<IconTrash className="size-4" />
+									<span>Delete All Chats</span>
+								</SidebarMenuButton>
+							</AlertDialogTrigger>
+							<AlertDialogContent>
+								<AlertDialogHeader>
+									<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+									<AlertDialogDescription>
+										This action cannot be undone. This will permanently delete
+										all your chat sessions and messages.
+									</AlertDialogDescription>
+								</AlertDialogHeader>
+								<AlertDialogFooter>
+									<AlertDialogCancel>Cancel</AlertDialogCancel>
+									<AlertDialogAction
+										onClick={clearAllSessions}
+										className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+									>
+										Delete All
+									</AlertDialogAction>
+								</AlertDialogFooter>
+							</AlertDialogContent>
+						</AlertDialog>
+					</SidebarMenuItem>
+				</SidebarMenu>
+			</SidebarFooter>
 		</Sidebar>
 	);
 }

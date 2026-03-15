@@ -1,9 +1,10 @@
 import { IconSend } from "@tabler/icons-react";
 import { fetchServerSentEvents, useChat } from "@tanstack/ai-react";
-import { createLazyFileRoute } from "@tanstack/react-router";
+import { createLazyFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { MessageActions } from "#/db/actions";
 import { Button } from "@/components/ui/button";
+import { useSessionsStore } from "@/hooks/use-sessions-store";
 
 interface ChatSearch {
 	initialMessage?: string;
@@ -21,6 +22,8 @@ export const Route = createLazyFileRoute("/chat/$sessionId")<
 function RouteComponent() {
 	const { sessionId } = Route.useParams();
 	const { initialMessage } = Route.useSearch();
+	const navigate = useNavigate();
+	const { addSession, updateSessionTitle } = useSessionsStore();
 	const [sessionLoading, setSessionLoading] = useState(true);
 	const [error, setError] = useState(false);
 	const [savedMessages, setSavedMessages] = useState<
@@ -69,8 +72,9 @@ function RouteComponent() {
 
 				setSavedMessages(msgs);
 
-				// Check if we have messages (means title was already generated)
-				if (msgs.length > 0) {
+				// Check if we have messages and if any of them have a title
+				const hasTitle = msgs.some((m: any) => m.title && m.title !== "New Chat");
+				if (hasTitle) {
 					setTitleGenerated(true);
 				}
 
@@ -93,12 +97,24 @@ function RouteComponent() {
 	useEffect(() => {
 		if (initialMessage && !initialMessageSent.current && !sessionLoading) {
 			initialMessageSent.current = true;
-			// Small delay to ensure everything is ready
-			setTimeout(() => {
-				handleSend(initialMessage);
-			}, 100);
+
+			// Clear the initialMessage from the URL immediately
+			navigate({
+				to: "/chat/$sessionId",
+				params: { sessionId },
+				search: {},
+				replace: true,
+			});
+
+			// Only send if there are no saved messages (prevent double-send on refresh)
+			if (savedMessages.length === 0) {
+				// Small delay to ensure everything is ready
+				setTimeout(() => {
+					handleSend(initialMessage);
+				}, 100);
+			}
 		}
-	}, [initialMessage, sessionLoading]);
+	}, [initialMessage, sessionLoading, savedMessages.length, sessionId, navigate]);
 
 	const handleSend = async (messageOverride?: string) => {
 		const messageToSend = messageOverride ?? input;
@@ -106,8 +122,16 @@ function RouteComponent() {
 			const userMessage = messageToSend.trim();
 			setInput("");
 
-			// Save user message to DB immediately
 			const isFirstMessage = savedMessages.length === 0 && messages.length === 0;
+
+			// Add session to sidebar immediately if it's the first message
+			if (isFirstMessage && !titleGenerated) {
+				addSession({
+					id: sessionId,
+					title: "New Chat",
+					isLoading: true,
+				});
+			}
 
 			if (isFirstMessage && !titleGenerated) {
 				// Generate title using AI
@@ -128,6 +152,7 @@ function RouteComponent() {
 								},
 							],
 							conversationId: `title-${sessionId}`,
+							stream: false,
 						}),
 					});
 
@@ -140,6 +165,10 @@ function RouteComponent() {
 							userMessage,
 							generatedTitle,
 						);
+						// PERSIST: Update all messages in this session with the new title
+						await MessageActions.updateSessionTitle(sessionId, generatedTitle);
+						
+						updateSessionTitle(sessionId, generatedTitle);
 						setTitleGenerated(true);
 					} else {
 						// Fallback: use first 50 chars as title
@@ -150,6 +179,9 @@ function RouteComponent() {
 							userMessage,
 							fallbackTitle,
 						);
+						await MessageActions.updateSessionTitle(sessionId, fallbackTitle);
+						
+						updateSessionTitle(sessionId, fallbackTitle);
 						setTitleGenerated(true);
 					}
 				} catch (err) {
@@ -161,11 +193,18 @@ function RouteComponent() {
 						userMessage,
 						fallbackTitle,
 					);
+					await MessageActions.updateSessionTitle(sessionId, fallbackTitle);
+					
+					updateSessionTitle(sessionId, fallbackTitle);
 					setTitleGenerated(true);
 				}
 			} else {
+				// If title is already generated, we should ideally fetch it and pass it here
+				// but since getSessionIds now looks for ANY message with a title, 
+				// saving with "" is fine as long as the first message has it.
 				await MessageActions.saveMessage(sessionId, "user", userMessage, "");
 			}
+
 
 			// Send message to AI
 			sendMessage(userMessage);

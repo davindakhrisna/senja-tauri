@@ -18,16 +18,28 @@ export const Route = createFileRoute("/api/chat/")({
 					);
 				}
 
-				const { messages, conversationId } = await request.json();
+				const { messages, conversationId, stream: shouldStream = true } = await request.json();
 
 				try {
-					const stream = chat({
+					const run = chat({
 						adapter: groqText("llama-3.3-70b-versatile"),
 						messages,
 						conversationId,
 					});
 
-					return toServerSentEventsResponse(stream);
+					if (!shouldStream) {
+						let content = "";
+						for await (const part of run) {
+							if ("delta" in part && typeof part.delta === "string") {
+								content += part.delta;
+							}
+						}
+						return new Response(content, {
+							headers: { "Content-Type": "text/plain" },
+						});
+					}
+
+					return toServerSentEventsResponse(run);
 				} catch (error) {
 					return new Response(
 						JSON.stringify({
