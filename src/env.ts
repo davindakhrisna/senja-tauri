@@ -5,6 +5,8 @@ export const env = createEnv({
 	server: {
 		SERVER_URL: z.string().url().optional(),
 		GROQ_API_KEY: z.string().optional(),
+		SYSTEM_PERSONALITY: z.string().optional(),
+		SYSTEM_INSTRUCTION: z.string().optional(),
 	},
 
 	/**

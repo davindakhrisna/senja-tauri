@@ -1,6 +1,6 @@
 import {
-	IconInnerShadowTop,
 	IconCirclePlusFilled,
+	IconInnerShadowTop,
 	IconTrash,
 } from "@tabler/icons-react";
 import {
@@ -17,11 +17,11 @@ import {
 import {
 	Sidebar,
 	SidebarContent,
+	SidebarFooter,
 	SidebarHeader,
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
-	SidebarFooter,
 } from "#/components/ui/sidebar";
 import { NavDocuments } from "./nav-documents";
 import { NavMain } from "./nav-main";
@@ -36,11 +36,12 @@ const data = {
 	],
 };
 
-import { useSessionsStore } from "@/hooks/use-sessions-store";
 import { useEffect } from "react";
+import { useSessionsStore } from "@/hooks/use-sessions-store";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-	const { sessions, fetchSessions, isLoaded, clearAllSessions } = useSessionsStore();
+	const { sessions, fetchSessions, isLoaded, clearAllSessions } =
+		useSessionsStore();
 
 	useEffect(() => {
 		if (!isLoaded) {

@@ -17,6 +17,7 @@ const config = defineConfig({
 		tanstackStart(),
 		viteReact(),
 	],
+	clearScreen: false,
 });
 
 export default config;

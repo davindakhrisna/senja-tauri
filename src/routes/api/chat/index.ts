@@ -18,12 +18,30 @@ export const Route = createFileRoute("/api/chat/")({
 					);
 				}
 
-				const { messages, conversationId, stream: shouldStream = true } = await request.json();
+				const {
+					messages,
+					conversationId,
+					stream: shouldStream = true,
+				} = await request.json();
 
 				try {
+					const systemMessage = {
+						role: "system" as const,
+						content:
+							process.env.SYSTEM_INSTRUCTION ||
+							"Respond accordingly to your personality. You should avoid using Emojis and any markdown formatting. For responses always use raw text only",
+					};
+
+					const personalityMessage = {
+						role: "system" as const,
+						content:
+							process.env.SYSTEM_PERSONALITY ||
+							"Your name is Glen Emanuel Nangoy. The user you interacts with is Nana, a girl whom Glen Emanuel Nangoy loves",
+					};
+
 					const run = chat({
 						adapter: groqText("llama-3.3-70b-versatile"),
-						messages,
+						messages: [systemMessage, personalityMessage, ...messages],
 						conversationId,
 					});
 
