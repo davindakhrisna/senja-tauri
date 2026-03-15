@@ -5,12 +5,7 @@ import {
 	IconInnerShadowTop,
 	IconSettings,
 	IconCirclePlusFilled,
-	IconPlusFilled,
 } from "@tabler/icons-react";
-
-import { NavDocuments } from "./nav-documents";
-import { NavMain } from "./nav-main";
-import { NavSecondary } from "./nav-secondary";
 import {
 	Sidebar,
 	SidebarContent,
@@ -19,6 +14,9 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 } from "#/components/ui/sidebar";
+import { NavDocuments } from "./nav-documents";
+import { NavMain } from "./nav-main";
+import { NavSecondary } from "./nav-secondary";
 
 const data = {
 	user: {
@@ -29,7 +27,7 @@ const data = {
 	navMain: [
 		{
 			title: "New Chat",
-			url: "#",
+			url: "/",
 			icon: IconCirclePlusFilled,
 		},
 	],
